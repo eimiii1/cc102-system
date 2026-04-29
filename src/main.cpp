@@ -47,15 +47,15 @@ Movie movies[MAX_MOVIES] = {
 };
 
 Showtime showtimes[MAX_MOVIES * MAX_SHOWTIMES] = {
-    // Mallari 
+    // Mallari (movieId 0)
     {0, "10:00 AM", "Cinema 1", 180.00},
     {0, "1:00 PM",  "Cinema 1", 180.00},
     {0, "7:00 PM",  "Cinema 1", 220.00},
-    // Rewind 
+    // Rewind (movieId 1)
     {1, "11:00 AM", "Cinema 2", 160.00},
     {1, "3:00 PM",  "Cinema 2", 160.00},
     {1, "8:00 PM",  "Cinema 2", 200.00},
-    // Dead Balag 
+    // Dead Balag (movieId 2)
     {2, "12:00 PM", "Cinema 3", 150.00},
     {2, "4:00 PM",  "Cinema 3", 150.00},
     {2, "9:00 PM",  "Cinema 3", 190.00},
@@ -82,10 +82,14 @@ void viewCinemas();
 void viewSoldTickets();
 bool processPayment(double price);
 void printTicket(Ticket t);
+int getInt(string prompt);
+double getDouble(string prompt);
+string getString(string prompt);
 void saveData();
 void loadData();
 
 int main() {
+    // Initialize all seats to available
     for (int i = 0; i < MAX_MOVIES * MAX_SHOWTIMES; i++) {
         for (int j = 0; j < MAX_SEATS; j++) {
             showtimes[i].seats[j] = false;
@@ -117,6 +121,45 @@ void pause() {
     cin.get();
 }
 
+int getInt(string prompt) {
+    int val;
+    cout << prompt;
+    while (!(cin >> val)) {
+        cin.clear();
+        cin.ignore(1000, '\n');
+        cout << "Invalid input. Press Enter to try again...";
+        cin.get();
+        cout << prompt;
+    }
+    return val;
+}
+
+double getDouble(string prompt) {
+    double val;
+    cout << prompt;
+    while (!(cin >> val)) {
+        cin.clear();
+        cin.ignore(1000, '\n');
+        cout << "Invalid input. Press Enter to try again...";
+        cin.get();
+        cout << prompt;
+    }
+    return val;
+}
+
+string getString(string prompt) {
+    string val;
+    cout << prompt;
+    while (true) {
+        getline(cin, val);
+        if (!val.empty()) break;
+        cout << "Input cannot be empty. Press Enter to try again...";
+        cin.get();
+        cout << prompt;
+    }
+    return val;
+}
+
 void menu() {
     cout << "\033[32m===== CINEMA BOOKING SYSTEM =====\033[0m\n\n";
     cout << "[1] Now Showing\n";
@@ -128,8 +171,7 @@ void menu() {
 }
 
 void selectChoice(int& choice) {
-    cout << "\nSelect choice: ";
-    cin >> choice;
+    choice = getInt("\nSelect choice: ");
 }
 
 void handleChoice(int& choice) {
@@ -164,6 +206,7 @@ void viewShowtimes() {
         cout << movies[i].title << " (" << movies[i].duration << ")\n";
         for (int j = 0; j < MAX_MOVIES * MAX_SHOWTIMES; j++) {
             if (showtimes[j].movieId == i) {
+                // Count available seats
                 int available = 0;
                 for (int s = 0; s < MAX_SEATS; s++) {
                     if (!showtimes[j].seats[s]) available++;
@@ -185,15 +228,14 @@ void bookTicket() {
     for (int i = 0; i < MAX_MOVIES; i++) {
         cout << "[" << i + 1 << "] " << movies[i].title << "\n";
     }
-    cout << "\nSelect movie (1-" << MAX_MOVIES << "): ";
-    int movieChoice;
-    cin >> movieChoice;
-    movieChoice--;
 
-    if (movieChoice < 0 || movieChoice >= MAX_MOVIES) {
-        cout << "Invalid movie.\n";
-        pause();
-        return;
+    int movieChoice;
+    while (true) {
+        movieChoice = getInt("\nSelect movie (1-" + to_string(MAX_MOVIES) + "): ") - 1;
+        if (movieChoice >= 0 && movieChoice < MAX_MOVIES) break;
+        cout << "Invalid movie. Press Enter to try again...";
+        cin.ignore(1000, '\n');
+        cin.get();
     }
 
     cout << "\nShowtimes for " << movies[movieChoice].title << ":\n";
@@ -215,15 +257,13 @@ void bookTicket() {
         }
     }
 
-    cout << "\nSelect showtime (1-" << count << "): ";
     int stChoice;
-    cin >> stChoice;
-    stChoice--;
-
-    if (stChoice < 0 || stChoice >= count) {
-        cout << "Invalid showtime.\n";
-        pause();
-        return;
+    while (true) {
+        stChoice = getInt("\nSelect showtime (1-" + to_string(count) + "): ") - 1;
+        if (stChoice >= 0 && stChoice < count) break;
+        cout << "Invalid showtime. Press Enter to try again...";
+        cin.ignore(1000, '\n');
+        cin.get();
     }
 
     int stIndex = showtimeIds[stChoice];
@@ -240,27 +280,24 @@ void bookTicket() {
     cout << "]\n";
     cout << "(X = taken)\n";
 
-    cout << "\nSelect seat (1-" << MAX_SEATS << "): ";
     int seatChoice;
-    cin >> seatChoice;
-    seatChoice--;
-
-    if (seatChoice < 0 || seatChoice >= MAX_SEATS) {
-        cout << "Invalid seat.\n";
-        pause();
-        return;
+    while (true) {
+        seatChoice = getInt("\nSelect seat (1-" + to_string(MAX_SEATS) + "): ") - 1;
+        if (seatChoice < 0 || seatChoice >= MAX_SEATS) {
+            cout << "Invalid seat. Press Enter to try again...";
+            cin.ignore(1000, '\n');
+            cin.get();
+        } else if (showtimes[stIndex].seats[seatChoice]) {
+            cout << "Seat already taken. Press Enter to try again...";
+            cin.ignore(1000, '\n');
+            cin.get();
+        } else {
+            break;
+        }
     }
 
-    if (showtimes[stIndex].seats[seatChoice]) {
-        cout << "Seat already taken.\n";
-        pause();
-        return;
-    }
-
-    cout << "\nEnter your name: ";
     cin.ignore();
-    string buyerName;
-    getline(cin, buyerName);
+    string buyerName = getString("\nEnter your name: ");
 
     cout << "\n--- Booking Summary ---\n";
     cout << "Movie   : " << movies[movieChoice].title << "\n";
@@ -270,9 +307,15 @@ void bookTicket() {
     cout << "Price   : PHP " << showtimes[stIndex].price << "\n";
     cout << "Name    : " << buyerName << "\n";
     cout << "-----------------------\n";
-    cout << "Confirm? (1 = Yes, 0 = No): ";
+
     int confirm;
-    cin >> confirm;
+    while (true) {
+        confirm = getInt("Confirm? (1 = Yes, 0 = No): ");
+        if (confirm == 0 || confirm == 1) break;
+        cout << "Please enter 1 or 0. Press Enter to try again...";
+        cin.ignore(1000, '\n');
+        cin.get();
+    }
 
     if (confirm != 1) {
         cout << "Booking cancelled.\n";
@@ -300,49 +343,47 @@ void bookTicket() {
 
     soldTickets[ticketCount] = t;
     ticketCount++;
-
     saveData();
 
     printTicket(t);
     pause();
 }
 
-
 bool processPayment(double price) {
     cout << "\n--- Payment ---\n";
     cout << "[1] Cash\n";
     cout << "[2] GCash\n";
     cout << "[3] Maya\n";
-    cout << "Select payment method: ";
+
     int method;
-    cin >> method;
+    while (true) {
+        method = getInt("Select payment method: ");
+        if (method >= 1 && method <= 3) break;
+        cout << "Invalid method. Press Enter to try again...";
+        cin.ignore(1000, '\n');
+        cin.get();
+    }
 
     if (method == 1) {
         cout << "Amount due: PHP " << price << "\n";
-        cout << "Enter cash amount: PHP ";
         double cash;
-        cin >> cash;
-        if (cash < price) {
-            cout << "Insufficient amount.\n";
-            return false;
+        while (true) {
+            cash = getDouble("Enter cash amount: PHP ");
+            if (cash >= price) break;
+            cout << "Insufficient amount. Press Enter to try again...";
+            cin.ignore(1000, '\n');
+            cin.get();
         }
         cout << "Change: PHP " << cash - price << "\n";
         cout << "Payment successful!\n";
         return true;
-    } else if (method == 2 || method == 3) {
+    } else {
         string methodName = (method == 2) ? "GCash" : "Maya";
-        cout << "Enter " << methodName << " number: ";
-        string number;
-        cin >> number;
-        cout << "Amount due: PHP " << price << "\n";
-        cout << "Enter reference number: ";
-        string refNumber;
-        cin >> refNumber;
+        cin.ignore();
+        string number = getString("Enter " + methodName + " number: ");
+        string refNumber = getString("Enter reference number: ");
         cout << "Payment confirmed! Ref#: " << refNumber << "\n";
         return true;
-    } else {
-        cout << "Invalid payment method.\n";
-        return false;
     }
 }
 
@@ -419,8 +460,8 @@ void loadData() {
         while (getline(tf, line) && ticketCount < MAX_TICKETS) {
             Ticket t;
             int start = 0, field = 0;
-            for (int i = 0; i <= line.size(); i++) {
-                if (i == line.size() || line[i] == '|') {
+            for (int i = 0; i <= (int)line.size(); i++) {
+                if (i == (int)line.size() || line[i] == '|') {
                     string part = line.substr(start, i - start);
                     if      (field == 0) t.receiptNumber = stoi(part);
                     else if (field == 1) t.movieTitle    = part;
